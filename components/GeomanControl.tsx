@@ -10,6 +10,7 @@ interface Props extends L.ControlOptions {
 }
 
 const Geoman = L.Control.extend({
+  //create options
   options: {},
   initialize(options: Props) {
     L.setOptions(this, options);
@@ -19,15 +20,28 @@ const Geoman = L.Control.extend({
     if (!map.pm) return;
 
     map.pm.addControls({
-      ...this.options,
+      //add only the marker control
+      drawMarker: true,
+      rorateMode: false,
+      editMode: false,
+      cutPolygon: false,
+      removalMode: false,
+      customControls: true,
+      drawCircleMarker: false,
+      drawCircle: this.options.drawCircle,
+      drawRectangle: false,
+      drawPolyline: false,
+      drawPolygon: false,
+      drawText: false,
     });
 
     let isPlacing = false;
     let tempLayer: L.Polygon | null = null;
+    let selectedLayer: L.Polygon | null = null;
 
     const handleMouseMove = (e: L.LeafletMouseEvent) => {
       const latlng = e.latlng;
-      const scale = 0.00001;
+      const scale = 0.0001;
 
       const solarPanelCoords: L.LatLngTuple[] = [
         [latlng.lat + scale, latlng.lng - scale],
@@ -43,9 +57,38 @@ const Geoman = L.Control.extend({
       }
     };
 
-    const handleClick = (e: L.LeafletMouseEvent) => {
+    const handlePolygonClick = (layer: L.Polygon) => {
+      if (selectedLayer && selectedLayer !== layer) {
+        selectedLayer.setStyle({ color: "blue" });
+      }
+      const currentColor = layer.options.color;
+      const newColor = currentColor === "blue" ? "gray" : "blue";
+      layer.setStyle({ color: newColor });
+      selectedLayer = layer === selectedLayer ? null : layer;
+
+      //add an on hover action after is being clicked to display a tooltip
+      layer.on("mouseover", (e) => {
+        const tooltip = L.tooltip({
+          permanent: false,
+          direction: "center",
+          className: "custom-tooltip",
+          offset: [0, 0],
+        })
+          .setContent("Here is the solar panel content tooltip")
+          .setLatLng(e.latlng)
+          .addTo(map);
+      });
+    };
+
+    map.on("mouseout", () => {
+      map.closePopup();
+    });
+
+    const handleAddButtonClick = (e: L.LeafletMouseEvent) => {
       if (tempLayer) {
-        tempLayer.pm.disable();
+        const currentLayer = tempLayer;
+        currentLayer.on("click", () => handlePolygonClick(currentLayer));
+        currentLayer.pm.disable();
         tempLayer = null;
       }
     };
@@ -55,15 +98,17 @@ const Geoman = L.Control.extend({
       block: "custom" as "options" | "custom" | "draw" | "edit",
       className: "custom-button-class",
       title: "Add Solar Panel",
+      icon: "fas fa-solar-panel",
+
       onClick: () => {
         isPlacing = !isPlacing;
 
         if (isPlacing) {
           map.on("mousemove", handleMouseMove);
-          map.on("click", handleClick);
+          map.on("click", handleAddButtonClick);
         } else {
           map.off("mousemove", handleMouseMove);
-          map.off("click", handleClick);
+          map.off("click", handleAddButtonClick);
           if (tempLayer) {
             map.removeLayer(tempLayer);
             tempLayer = null;
