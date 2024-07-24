@@ -27,7 +27,7 @@ const Geoman = L.Control.extend({
 
     const handleMouseMove = (e: L.LeafletMouseEvent) => {
       const latlng = e.latlng;
-      const scale = 0.00001; // Adjust this value to scale the size of the solar panel
+      const scale = 0.00001;
 
       const solarPanelCoords: L.LatLngTuple[] = [
         [latlng.lat + scale, latlng.lng - scale],
@@ -45,7 +45,7 @@ const Geoman = L.Control.extend({
 
     const handleClick = (e: L.LeafletMouseEvent) => {
       if (tempLayer) {
-        tempLayer.pm.disable(); // Disable editing and dragging
+        tempLayer.pm.disable();
         tempLayer = null;
       }
     };
